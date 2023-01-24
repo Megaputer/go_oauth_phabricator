@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	phabricator "github.com/Megaputer/go_oauth_phabricator"
+	phabricator "github.com/Megaputer/go_oauth_phabricator/v2"
 )
 
 // initialize the client.
