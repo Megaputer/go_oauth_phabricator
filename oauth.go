@@ -24,7 +24,7 @@ func (c *Config) token(ctx context.Context, code string) (*oauth2.Token, error) 
 	}
 
 	if !token.Valid() {
-		return token, fmt.Errorf("token is invalid: %w", err)
+		return token, fmt.Errorf("token is invalid")
 	}
 
 	return token, nil
@@ -44,7 +44,12 @@ func (c *Config) body(ctx context.Context, token *oauth2.Token) ([]byte, error) 
 	defer authResponse.Body.Close()
 
 	if authResponse.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("statusCode is not ok: %w", err)
+		bb, err := io.ReadAll(authResponse.Body)
+		if err != nil {
+			return nil, fmt.Errorf("statusCode is not ok: %d: io.ReadAll: %w", authResponse.StatusCode, err)
+		}
+
+		return nil, fmt.Errorf("statusCode is not ok: %d: body: '%s'", authResponse.StatusCode, string(bb))
 	}
 
 	bb, err := io.ReadAll(authResponse.Body)
