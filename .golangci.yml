@@ -10,12 +10,12 @@ linters-settings:
     custom-order: true
     sections:
       - standard
-      - prefix(github.com/Megaputer/go_oauth_phabricator
+      - prefix(github.com/Megaputer/go_oauth_phabricator/
       - default
       - blank
       - dot
   gofumpt:
-    module-path: github.com/Megaputer/go_oauth_phabricator
+    module-path: github.com/Megaputer/go_oauth_phabricator/
   grouper:
     import-require-single-import: true
     import-require-grouping: true

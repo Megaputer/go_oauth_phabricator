@@ -1,22 +1,3 @@
-# go_oauth_phabricator
-Client for OAuth2 Phabricator in Golang
-
-Installation and Usage
-=============
-
-
-Install
----------------
-    go get -v github.com/Megaputer/go_oauth_phabricator
-
-Usage
----------------
-    go run cmd/example/main.go 'code_value'
-
-Example
--------
-
-```Go
 package main
 
 import (
@@ -33,7 +14,7 @@ import (
 func initialize() (*phabricator.Config, error) {
 	// Get phid and secret from
 	// https://phabricator.example.net/oauthserver/query/all/
-	phid := "PHID-OASC-g7np52mog2r6cu5bwd4q"
+	phid := "PHID-OASC-..."
 	secret := "Application Secret"
 
 	// redirectURL is the URL to redirect users going through
@@ -105,4 +86,3 @@ func run(ctx context.Context) error {
 
 	return nil
 }
-```

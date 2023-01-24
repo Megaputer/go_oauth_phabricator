@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 
 	"golang.org/x/oauth2"
 )
@@ -17,10 +16,10 @@ type oauthResponse struct {
 	ErrorInfo string `json:"error_info"`
 }
 
-func (c *Config) token(ctx context.Context, code string) (*oauth2.Token, error) {
-	token, err := c.oauth.Exchange(ctx, code)
+func (d *Config) token(ctx context.Context, code string) (*oauth2.Token, error) {
+	token, err := d.oauth.Exchange(ctx, code)
 	if err != nil {
-		return token, fmt.Errorf("oauth config exchange method failed: %w", err)
+		return token, fmt.Errorf("d.oauth.Exchange: %w", err)
 	}
 
 	if !token.Valid() {
@@ -30,29 +29,27 @@ func (c *Config) token(ctx context.Context, code string) (*oauth2.Token, error) 
 	return token, nil
 }
 
-func (c *Config) body(ctx context.Context, token *oauth2.Token) ([]byte, error) {
-	authClient := c.oauth.Client(ctx, token)
-
-	clientInfoURL := c.getClientInfoURL(token.AccessToken).String()
+func (d *Config) get(ctx context.Context, token *oauth2.Token, dstURL string) ([]byte, error) {
+	client := d.oauth.Client(ctx, token)
 
 	//nolint:noctx
-	authResponse, err := authClient.Get(clientInfoURL)
+	resp, err := client.Get(dstURL)
 	if err != nil {
-		return nil, fmt.Errorf("can not get auth response: %w", err)
+		return nil, fmt.Errorf("client.Get: %w", err)
 	}
 
-	defer authResponse.Body.Close()
+	defer resp.Body.Close()
 
-	if authResponse.StatusCode != http.StatusOK {
-		bb, err := io.ReadAll(authResponse.Body)
+	if resp.StatusCode != http.StatusOK {
+		bb, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("statusCode is not ok: %d: io.ReadAll: %w", authResponse.StatusCode, err)
+			return nil, fmt.Errorf("statusCode is not ok: %d: io.ReadAll: %w", resp.StatusCode, err)
 		}
 
-		return nil, fmt.Errorf("statusCode is not ok: %d: body: '%s'", authResponse.StatusCode, string(bb))
+		return nil, fmt.Errorf("statusCode is not ok: %d: body: '%s'", resp.StatusCode, string(bb))
 	}
 
-	bb, err := io.ReadAll(authResponse.Body)
+	bb, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("io.ReadAll: %w", err)
 	}
@@ -60,7 +57,7 @@ func (c *Config) body(ctx context.Context, token *oauth2.Token) ([]byte, error) 
 	return bb, nil
 }
 
-func (c *Config) unmarshal(body []byte) (User, error) {
+func (d *Config) unmarshal(body []byte) (User, error) {
 	var resp oauthResponse
 
 	err := json.Unmarshal(body, &resp)
@@ -73,16 +70,4 @@ func (c *Config) unmarshal(body []byte) (User, error) {
 	}
 
 	return resp.Result, nil
-}
-
-func (c *Config) getClientInfoURL(accessToken string) *url.URL {
-	u := c.url.JoinPath("api/user.whoami")
-
-	v := url.Values{}
-
-	v.Add("access_token", accessToken)
-
-	u.RawQuery = v.Encode()
-
-	return u
 }
