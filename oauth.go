@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/url"
 
 	"golang.org/x/oauth2"
 )
@@ -19,11 +20,11 @@ type oauthResponse struct {
 func (c *Config) token(code string) (*oauth2.Token, error) {
 	token, err := c.oauth.Exchange(context.Background(), code)
 	if err != nil {
-		return token, fmt.Errorf("oauth config exchange method failed: %s", err)
+		return token, fmt.Errorf("oauth config exchange method failed: %w", err)
 	}
 
 	if !token.Valid() {
-		return token, fmt.Errorf("token is invalid: %s", err)
+		return token, fmt.Errorf("token is invalid: %w", err)
 	}
 
 	return token, nil
@@ -32,30 +33,50 @@ func (c *Config) token(code string) (*oauth2.Token, error) {
 func (c *Config) body(token *oauth2.Token) ([]byte, error) {
 	authClient := c.oauth.Client(context.Background(), token)
 
-	getClientInfoURL := c.url + "/api/user.whoami?access_token=" + token.AccessToken
-	authResponse, err := authClient.Get(getClientInfoURL)
+	clientInfoURL := c.getClientInfoURL(token.AccessToken).String()
+
+	authResponse, err := authClient.Get(clientInfoURL)
 	if err != nil {
-		return []byte{}, fmt.Errorf("can't get auth response: %s", err)
+		return []byte{}, fmt.Errorf("can not get auth response: %w", err)
 	}
+
 	defer authResponse.Body.Close()
 
 	if authResponse.StatusCode != http.StatusOK {
-		return []byte{}, fmt.Errorf("statusCode is not ok: %s", err)
+		return []byte{}, fmt.Errorf("statusCode is not ok: %w", err)
 	}
 
-	return ioutil.ReadAll(authResponse.Body)
+	bb, err := io.ReadAll(authResponse.Body)
+	if err != nil {
+		return []byte{}, fmt.Errorf("io.ReadAll: %w", err)
+	}
+
+	return bb, nil
 }
 
 func (c *Config) unmarshal(body []byte) (User, error) {
 	var resp oauthResponse
 
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return resp.Result, fmt.Errorf("unable to decode into struct : %s", err)
+	err := json.Unmarshal(body, &resp)
+	if err != nil {
+		return resp.Result, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
 	if resp.ErrorCode != "" {
-		return resp.Result, fmt.Errorf("can't find user info: %s", resp.ErrorInfo)
+		return resp.Result, fmt.Errorf("can not find user info: %s", resp.ErrorInfo)
 	}
 
 	return resp.Result, nil
+}
+
+func (c *Config) getClientInfoURL(accessToken string) *url.URL {
+	u := c.url.JoinPath("api/user.whoami")
+
+	v := url.Values{}
+
+	v.Add("access_token", accessToken)
+
+	u.RawQuery = v.Encode()
+
+	return u
 }
