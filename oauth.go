@@ -17,8 +17,8 @@ type oauthResponse struct {
 	ErrorInfo string `json:"error_info"`
 }
 
-func (c *Config) token(code string) (*oauth2.Token, error) {
-	token, err := c.oauth.Exchange(context.Background(), code)
+func (c *Config) token(ctx context.Context, code string) (*oauth2.Token, error) {
+	token, err := c.oauth.Exchange(ctx, code)
 	if err != nil {
 		return token, fmt.Errorf("oauth config exchange method failed: %w", err)
 	}

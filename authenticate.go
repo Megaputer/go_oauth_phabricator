@@ -85,7 +85,7 @@ func ClientConfig(clientID string, clientSecret string, redirectURL string, phab
 func (c *Config) Authenticate(ctx context.Context, code string) (User, error) {
 	var user User
 
-	token, err := c.token(code)
+	token, err := c.token(ctx, code)
 	if err != nil {
 		return user, fmt.Errorf("token: %w", err)
 	}
