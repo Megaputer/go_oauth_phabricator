@@ -2,26 +2,30 @@
 package phabricator
 
 import (
+	"fmt"
+	"net/url"
+
 	"golang.org/x/oauth2"
 )
 
 // Config for OAuth
 type Config struct {
-	phabricatorURL string
+	phabricatorURL *url.URL
 	oauth          *oauth2.Config
 }
 
 // User is the result of the function
 // JSON looks like:
-// {
-//  "phid": "PHID-USER-...",
-//  "userName": "...",
-//  "realName": "...",
-//  "image": phabricator_user_picture,
-//  "uri": phabricator_user_url,
-//  "roles": ["admin", "verified", "approved", "activated"],
-//  "primaryEmail": email
-// }
+//
+//	{
+//	 "phid": "PHID-USER-...",
+//	 "userName": "...",
+//	 "realName": "...",
+//	 "image": phabricator_user_picture,
+//	 "uri": phabricator_user_url,
+//	 "roles": ["admin", "verified", "approved", "activated"],
+//	 "primaryEmail": email
+//	}
 type User struct {
 	Phid         string   `json:"phid"`
 	UserName     string   `json:"userName"`
@@ -45,19 +49,33 @@ type User struct {
 //
 // phabricatorURL the url of the phabricator server
 // that is the source of OAuth
-func ClientConfig(clientID string, сlientSecret string, redirectURL string, phabricatorURL string) *Config {
-	return &Config{
-		phabricatorURL: phabricatorURL,
-		oauth: &oauth2.Config{
-			RedirectURL:  redirectURL,
-			ClientID:     clientID,
-			ClientSecret: сlientSecret,
-			Endpoint: oauth2.Endpoint{
-				AuthURL:  phabricatorURL + "/oauthserver/auth/",
-				TokenURL: phabricatorURL + "/oauthserver/token/",
-			},
-		},
+func ClientConfig(clientID string, сlientSecret string, redirectURL string, phabricatorURL string) (*Config, error) {
+	u, err := url.Parse(phabricatorURL)
+	if err != nil {
+		return nil, fmt.Errorf("url.Parse: %w", err)
 	}
+
+	authURL := u.JoinPath("oauthserver/auth").String()
+	tokenURL := u.JoinPath("oauthserver/token").String()
+
+	e := oauth2.Endpoint{
+		AuthURL:  authURL,
+		TokenURL: tokenURL,
+	}
+
+	o := &oauth2.Config{
+		RedirectURL:  redirectURL,
+		ClientID:     clientID,
+		ClientSecret: сlientSecret,
+		Endpoint:     e,
+	}
+
+	c := &Config{
+		phabricatorURL: u,
+		oauth:          o,
+	}
+
+	return c, nil
 }
 
 // Authenticate returns the structure of the User, by code.
