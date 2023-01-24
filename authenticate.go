@@ -8,7 +8,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Config for OAuth
+// Config for OAuth.
 type Config struct {
 	url   *url.URL
 	oauth *oauth2.Config
@@ -48,8 +48,8 @@ type User struct {
 // the OAuth flow, after the resource owner's URLs.
 //
 // phabricatorURL the url of the phabricator server
-// that is the source of OAuth
-func ClientConfig(clientID string, сlientSecret string, redirectURL string, phabricatorURL string) (*Config, error) {
+// that is the source of OAuth.
+func ClientConfig(clientID string, clientSecret string, redirectURL string, phabricatorURL string) (*Config, error) {
 	u, err := url.Parse(phabricatorURL)
 	if err != nil {
 		return nil, fmt.Errorf("url.Parse: %w", err)
@@ -66,7 +66,7 @@ func ClientConfig(clientID string, сlientSecret string, redirectURL string, pha
 	o := &oauth2.Config{
 		RedirectURL:  redirectURL,
 		ClientID:     clientID,
-		ClientSecret: сlientSecret,
+		ClientSecret: clientSecret,
 		Endpoint:     e,
 	}
 
