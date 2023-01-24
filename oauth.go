@@ -30,25 +30,26 @@ func (c *Config) token(code string) (*oauth2.Token, error) {
 	return token, nil
 }
 
-func (c *Config) body(token *oauth2.Token) ([]byte, error) {
-	authClient := c.oauth.Client(context.Background(), token)
+func (c *Config) body(ctx context.Context, token *oauth2.Token) ([]byte, error) {
+	authClient := c.oauth.Client(ctx, token)
 
 	clientInfoURL := c.getClientInfoURL(token.AccessToken).String()
 
+	//nolint:noctx
 	authResponse, err := authClient.Get(clientInfoURL)
 	if err != nil {
-		return []byte{}, fmt.Errorf("can not get auth response: %w", err)
+		return nil, fmt.Errorf("can not get auth response: %w", err)
 	}
 
 	defer authResponse.Body.Close()
 
 	if authResponse.StatusCode != http.StatusOK {
-		return []byte{}, fmt.Errorf("statusCode is not ok: %w", err)
+		return nil, fmt.Errorf("statusCode is not ok: %w", err)
 	}
 
 	bb, err := io.ReadAll(authResponse.Body)
 	if err != nil {
-		return []byte{}, fmt.Errorf("io.ReadAll: %w", err)
+		return nil, fmt.Errorf("io.ReadAll: %w", err)
 	}
 
 	return bb, nil

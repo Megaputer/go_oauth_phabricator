@@ -2,6 +2,7 @@
 package phabricator
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -81,7 +82,7 @@ func ClientConfig(clientID string, clientSecret string, redirectURL string, phab
 // Authenticate returns the structure of the User, by code.
 // The code will be in the *http.Request.FormValue("code")
 // https://secure.phabricator.com/book/phabcontrib/article/using_oauthserver/
-func (c *Config) Authenticate(code string) (User, error) {
+func (c *Config) Authenticate(ctx context.Context, code string) (User, error) {
 	var user User
 
 	token, err := c.token(code)
@@ -89,7 +90,7 @@ func (c *Config) Authenticate(code string) (User, error) {
 		return user, fmt.Errorf("token: %w", err)
 	}
 
-	body, err := c.body(token)
+	body, err := c.body(ctx, token)
 	if err != nil {
 		return user, fmt.Errorf("body: %w", err)
 	}
