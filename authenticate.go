@@ -106,7 +106,7 @@ func (c *Config) Authenticate(code string) (User, error) {
 // that asks for permissions for the required scopes explicitly.
 //
 // State is a token to protect the user from CSRF attacks. You must
-// always provide a non-empty string and validate that it matches the
+// always provide a non-empty string and validate that it matches
 // the state query parameter on your redirect callback.
 // See http://tools.ietf.org/html/rfc6749#section-10.12 for more info.
 func (c *Config) AuthCodeURL(state string) string {
