@@ -32,7 +32,7 @@ func (c *Config) token(code string) (*oauth2.Token, error) {
 func (c *Config) body(token *oauth2.Token) ([]byte, error) {
 	authClient := c.oauth.Client(context.Background(), token)
 
-	getClientInfoURL := c.phabricatorURL + "/api/user.whoami?access_token=" + token.AccessToken
+	getClientInfoURL := c.url + "/api/user.whoami?access_token=" + token.AccessToken
 	authResponse, err := authClient.Get(getClientInfoURL)
 	if err != nil {
 		return []byte{}, fmt.Errorf("can't get auth response: %s", err)

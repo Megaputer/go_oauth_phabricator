@@ -10,8 +10,8 @@ import (
 
 // Config for OAuth
 type Config struct {
-	phabricatorURL *url.URL
-	oauth          *oauth2.Config
+	url   *url.URL
+	oauth *oauth2.Config
 }
 
 // User is the result of the function
@@ -71,8 +71,8 @@ func ClientConfig(clientID string, сlientSecret string, redirectURL string, pha
 	}
 
 	c := &Config{
-		phabricatorURL: u,
-		oauth:          o,
+		url:   u,
+		oauth: o,
 	}
 
 	return c, nil
@@ -86,15 +86,20 @@ func (c *Config) Authenticate(code string) (User, error) {
 
 	token, err := c.token(code)
 	if err != nil {
-		return user, err
+		return user, fmt.Errorf("token: %w", err)
 	}
 
 	body, err := c.body(token)
 	if err != nil {
-		return user, err
+		return user, fmt.Errorf("body: %w", err)
 	}
 
-	return c.unmarshal(body)
+	user, err = c.unmarshal(body)
+	if err != nil {
+		return user, fmt.Errorf("unmarshal: %w", err)
+	}
+
+	return user, nil
 }
 
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
