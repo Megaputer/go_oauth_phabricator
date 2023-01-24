@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -16,45 +16,57 @@ type oauthResponse struct {
 	ErrorInfo string `json:"error_info"`
 }
 
-func (c *Config) token(code string) (*oauth2.Token, error) {
-	token, err := c.oauth.Exchange(context.Background(), code)
+func (d *Config) token(ctx context.Context, code string) (*oauth2.Token, error) {
+	token, err := d.oauth.Exchange(ctx, code)
 	if err != nil {
-		return token, fmt.Errorf("oauth config exchange method failed: %s", err)
+		return token, fmt.Errorf("d.oauth.Exchange: %w", err)
 	}
 
 	if !token.Valid() {
-		return token, fmt.Errorf("token is invalid: %s", err)
+		return token, fmt.Errorf("token is invalid")
 	}
 
 	return token, nil
 }
 
-func (c *Config) body(token *oauth2.Token) ([]byte, error) {
-	authClient := c.oauth.Client(context.Background(), token)
+func (d *Config) get(ctx context.Context, token *oauth2.Token, dstURL string) ([]byte, error) {
+	client := d.oauth.Client(ctx, token)
 
-	getClientInfoURL := c.phabricatorURL + "/api/user.whoami?access_token=" + token.AccessToken
-	authResponse, err := authClient.Get(getClientInfoURL)
+	//nolint:noctx
+	resp, err := client.Get(dstURL)
 	if err != nil {
-		return []byte{}, fmt.Errorf("can't get auth response: %s", err)
-	}
-	defer authResponse.Body.Close()
-
-	if authResponse.StatusCode != http.StatusOK {
-		return []byte{}, fmt.Errorf("statusCode is not ok: %s", err)
+		return nil, fmt.Errorf("client.Get: %w", err)
 	}
 
-	return ioutil.ReadAll(authResponse.Body)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bb, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("statusCode is not ok: %d: io.ReadAll: %w", resp.StatusCode, err)
+		}
+
+		return nil, fmt.Errorf("statusCode is not ok: %d: body: '%s'", resp.StatusCode, string(bb))
+	}
+
+	bb, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("io.ReadAll: %w", err)
+	}
+
+	return bb, nil
 }
 
-func (c *Config) unmarshal(body []byte) (User, error) {
+func (d *Config) unmarshal(body []byte) (User, error) {
 	var resp oauthResponse
 
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return resp.Result, fmt.Errorf("unable to decode into struct : %s", err)
+	err := json.Unmarshal(body, &resp)
+	if err != nil {
+		return resp.Result, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
 	if resp.ErrorCode != "" {
-		return resp.Result, fmt.Errorf("can't find user info: %s", resp.ErrorInfo)
+		return resp.Result, fmt.Errorf("can not find user info: %s", resp.ErrorInfo)
 	}
 
 	return resp.Result, nil

@@ -1,4 +1,4 @@
-module github.com/Megaputer/go_oauth_phabricator
+module github.com/Megaputer/go_oauth_phabricator/v2
 
 go 1.19
 
