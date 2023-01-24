@@ -15,4 +15,4 @@ Usage
 
 Example
 -------
-[Contribution guidelines for this project](cmd/example/main.go)
+[Example](cmd/example/main.go)
